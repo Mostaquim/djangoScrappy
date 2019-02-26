@@ -11,7 +11,7 @@ log = logging.getLogger('SearchSpider')
 mysql = mysql.connector.connect(
     host="localhost",
     user="root",
-    passwd="",
+    password="metro2o33",
     database="web_scrapper"
 )
 
@@ -143,9 +143,9 @@ class SearchpageSpider(scrapy.Spider):
             log.debug("%s %s %s %s " % (asin, title, price, review))
             if all(key in title.lower() for key in keywords):
                 cursor.execute("INSERT IGNORE INTO "
-                               "`asin`(`id`, `title`, `price`, `reviews`)"
-                               " VALUES (%s,%s,%s,%s)",
-                               (asin, title, price, review)
+                               "`asin`(`id`, `title`, `price`, `reviews`, `keyword`)"
+                               " VALUES (%s,%s,%s,%s,%s)",
+                               (asin, title, price, review, self.keyword)
                                )
                 mysql.commit()
                 log.debug("Added %s" % title)
