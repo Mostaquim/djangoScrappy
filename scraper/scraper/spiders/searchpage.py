@@ -53,17 +53,22 @@ class ScraperConfig:
         else:
             return False
 
+    @staticmethod
+    def keyword_finished(key):
+        cursor.execute("UPDATE `keywords` SET `scrapped` = '1' WHERE `word` =%s;", key)
+        mysql.commit()
+
 
 class SearchpageSpider(scrapy.Spider):
     name = 'searchpage'
 
     def __init__(self, **kwargs):
-        self.keyword = fetch_single("SELECT keyword FROM `state` WHERE 1")
-        self.url = fetch_single("SELECT url FROM `state` WHERE 1")
+        self.keyword = ScraperConfig.get_keyword()
+        self.url = ScraperConfig.search_url(self.keyword)
         self.process = fetch_single("SELECT process FROM `state` WHERE 1")
         self.asin = ''
         log.debug("(init) Scraper Spider Initiated with Keyword %s , URL %s   , Process %s"
-                  % (self.keyword, self.url,  self.process))
+                  % (self.keyword, self.url, self.process))
         super(SearchpageSpider, self).__init__(**kwargs)
 
     def start_requests(self):
@@ -96,8 +101,10 @@ class SearchpageSpider(scrapy.Spider):
                         a = div.css('::attr(href)').get()
                         if 'eview' in a:
                             review = div.css('::text').get()
-
-                self.save_asin(asin, title, price, review)
+                image = elem.css('img::attr(src)').get()
+                if not image:
+                    image = ''
+                self.save_asin(asin, title, price, review, image)
         else:
             asins = response.css('.s-result-list>div')
             if asins:
@@ -117,7 +124,10 @@ class SearchpageSpider(scrapy.Spider):
                             a = div.css('::attr(href)').get()
                             if 'eview' in a:
                                 review = div.css('span::text').get()
-                    self.save_asin(asin, title, price, review)
+                    image = elem.css('img::attr(src)').get()
+                    if not image:
+                        image = ''
+                    self.save_asin(asin, title, price, review, image)
 
         # Getting Next Page Url
         next_page = response.css('a#pagnNextLink::attr(href)').get()
@@ -130,8 +140,13 @@ class SearchpageSpider(scrapy.Spider):
             self.save_instance()
 
             yield scrapy.Request(self.url, self.parse)
+        else:
+            ScraperConfig.keyword_finished(self.keyword)
+            self.keyword = ScraperConfig.get_keyword()
+            self.url = ScraperConfig.search_url(self.keyword)
+            yield scrapy.Request(self.url, self.parse)
 
-    def save_asin(self, asin, title, price, review):
+    def save_asin(self, asin, title, price, review, image):
         log.debug("SAVE ASIN CALLED")
         if asin:
             if review:
@@ -142,15 +157,19 @@ class SearchpageSpider(scrapy.Spider):
             log.debug(keywords)
             log.debug("%s %s %s %s " % (asin, title, price, review))
             if all(key in title.lower() for key in keywords):
-                cursor.execute("INSERT INTO `asin`(`id`, `title`, `price`, `reviews`, `keyword`)"
-                               " VALUES (%s,%s,%s,%s,%s) "
+                search_key = "%" + self.keyword + "%"
+                cursor.execute("INSERT INTO `asin`(`id`, `title`, `price`, `reviews`, `keyword` , `image`)"
+                               " VALUES (%s,%s,%s,%s,%s,%s) "
                                "ON DUPLICATE KEY UPDATE "
-                               "`title`= %s,`price`=%s,`reviews`=%s,"
-                               "`keyword` = IF(`keyword` like '%exercise yoga balls%',`keyword`, "
+                               "`title`= %s,`price`=%s,`reviews`=%s, image=%s, "
+                               "`keyword` = IF(`keyword` like %s,`keyword`, "
                                "CONCAT(`keyword`, ',' , %s))",
-                               (asin, title, price, review, self.keyword,
-                                title, price, review, self.keyword)
+                               (asin, title, price, review, self.keyword, image,
+                                title, price, review, image,
+                                search_key,
+                                self.keyword)
                                )
+                log.debug(cursor.statement)
                 mysql.commit()
                 log.debug("Added %s" % title)
             else:
