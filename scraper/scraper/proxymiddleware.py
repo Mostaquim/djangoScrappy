@@ -1,6 +1,4 @@
 import logging
-import random
-import re
 import mysql.connector
 from scrapy.conf import settings
 import datetime
@@ -34,6 +32,14 @@ def saveCrawled(key):
     cursor = mysql.cursor(buffered=True)
     cursor.execute("UPDATE `proxy` SET `crawled` = `crawled` + 1 , `last_crawled`='%s' WHERE `proxy`.`id` = %s;"
                    % (datetime.datetime.now(), key))
+    mysql.commit()
+
+
+def saveFailed(key, reason):
+    cursor = mysql.cursor(buffered=True)
+    cursor.execute("UPDATE `proxy` SET `failed` = `failed` + 1 , `last_failed`='%s' , failed_reason = '%s'"
+                   " WHERE `proxy`.`id` = %s;"
+                   % (datetime.datetime.now(), reason, key))
     mysql.commit()
 
 

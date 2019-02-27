@@ -142,10 +142,14 @@ class SearchpageSpider(scrapy.Spider):
             log.debug(keywords)
             log.debug("%s %s %s %s " % (asin, title, price, review))
             if all(key in title.lower() for key in keywords):
-                cursor.execute("INSERT IGNORE INTO "
-                               "`asin`(`id`, `title`, `price`, `reviews`, `keyword`)"
-                               " VALUES (%s,%s,%s,%s,%s)",
-                               (asin, title, price, review, self.keyword)
+                cursor.execute("INSERT INTO `asin`(`id`, `title`, `price`, `reviews`, `keyword`)"
+                               " VALUES (%s,%s,%s,%s,%s) "
+                               "ON DUPLICATE KEY UPDATE "
+                               "`title`= %s,`price`=%s,`reviews`=%s,"
+                               "`keyword` = IF(`keyword` like '%exercise yoga balls%',`keyword`, "
+                               "CONCAT(`keyword`, ',' , %s))",
+                               (asin, title, price, review, self.keyword,
+                                title, price, review, self.keyword)
                                )
                 mysql.commit()
                 log.debug("Added %s" % title)

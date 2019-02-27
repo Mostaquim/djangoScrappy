@@ -20,18 +20,22 @@ DOWNLOAD_DELAY = 10
 DOWNLOADER_MIDDLEWARES = {
 
     'scraper.proxymiddleware.ProxyMiddleware': 100,
-    'scrapy.spidermiddlewares.referer.RefererMiddleware': 110,
+    'scraper.useragentmiddleware.RotateUserAgentMiddleware': 110,
     'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
     'scrapy_useragents.downloadermiddlewares.useragents.UserAgentsMiddleware': 500,
     'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
     'scraper.customretrymiddleware.CustomRetryMiddleware': 550,
-
 }
 
-USER_AGENTS = [
-    'Mozilla/5.0 (X11; Linux x86_64) ' 'AppleWebKit/537.36 (KHTML, like Gecko) ' 'Chrome/61.0.3163.79 ' 'Safari/537.36',
-    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:55.0) ' 'Gecko/20100101 ' 'Firefox/55.0',
-    'Mozilla/5.0 (X11; Linux x86_64) ' 'AppleWebKit/537.36 (KHTML, like Gecko) ' 'Chrome/57.0.2987.110 ' 'Safari/537.36'
+USER_AGENT_CHOICES = [
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:23.0) Gecko/20100101 Firefox/23.0',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.62 Safari/537.36',
+    'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; WOW64; Trident/6.0)',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.146 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.146 Safari/537.36',
+    'Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20140205 Firefox/24.0 Iceweasel/24.3.0',
+    'Mozilla/5.0 (Windows NT 6.2; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
+    'Mozilla/5.0 (Windows NT 6.2; WOW64; rv:28.0) AppleWebKit/534.57.2 (KHTML, like Gecko) Version/5.1.7 Safari/534.57.2',
 ]
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
