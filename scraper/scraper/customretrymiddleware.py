@@ -33,7 +33,7 @@ class CustomRetryMiddleware(RetryMiddleware):
             saveFailed(request.meta['proxy_id'], reason)
             return self._retry(request, reason, spider) or response
 
-        # this is your check
+        # captcha check
         if response.status == 200:
             if 'Robot' in response.xpath('/html/head/title').get():
                 logger.debug(response.xpath('/html/head/title').get())

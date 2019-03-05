@@ -55,7 +55,7 @@ class ScraperConfig:
 
     @staticmethod
     def keyword_finished(key):
-        cursor.execute("UPDATE `keywords` SET `scrapped` = '1' WHERE `word` =%s;", key)
+        cursor.execute("UPDATE `keywords` SET `scrapped` = '1' WHERE `word` =%s;", (key,))
         mysql.commit()
 
 
@@ -63,6 +63,7 @@ class SearchpageSpider(scrapy.Spider):
     name = 'searchpage'
 
     def __init__(self, **kwargs):
+        # TODO we don't need this
         self.keyword = ScraperConfig.get_keyword()
         self.url = ScraperConfig.search_url(self.keyword)
         self.process = fetch_single("SELECT process FROM `state` WHERE 1")
