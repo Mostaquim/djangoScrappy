@@ -30,16 +30,16 @@ def getProxy():
 
 def saveCrawled(key):
     cursor = mysql.cursor(buffered=True)
-    cursor.execute("UPDATE `proxy` SET `crawled` = `crawled` + 1 , `last_crawled`='%s' WHERE `proxy`.`id` = %s;"
-                   % (datetime.datetime.now(), key))
+    cursor.execute("UPDATE `proxy` SET `crawled` = `crawled` + 1 , `last_crawled`=NOW() WHERE `proxy`.`id` = %s;"
+                   , (key,))
     mysql.commit()
 
 
 def saveFailed(key, reason):
     cursor = mysql.cursor(buffered=True)
-    cursor.execute("UPDATE `proxy` SET `failed` = `failed` + 1 , `last_failed`='%s' , failed_reason = '%s'"
+    cursor.execute("UPDATE `proxy` SET `failed` = `failed` + 1 , `last_failed`=NOW() , failed_reason = '%s'"
                    " WHERE `proxy`.`id` = %s;"
-                   % (datetime.datetime.now(), reason, key))
+                   , (reason, key))
     mysql.commit()
 
 
@@ -57,4 +57,3 @@ class ProxyMiddleware(object):
         saveCrawled(self.chosen_proxy[0])
         request.meta['proxy_id'] = self.chosen_proxy[0]
         self.chosen_proxy = getProxy()
-

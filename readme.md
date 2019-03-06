@@ -1,4 +1,5 @@
 # TODO
+- Install request on server
 - Create job database
 - Make scheduler script `save job id db->job->job`
 - Enable spider to receive scrapyd vars  `use post request in php curl` 
@@ -40,6 +41,7 @@ Parameters from scrapyd: job, searchBy
 On start: 
 
 ````
+check if it was completed before
 get job details from db: keyword, product
 update job status -> 1
 if searchby is keyword: get asins by keyword
@@ -115,3 +117,5 @@ Currently none of the spider generating any new keywords
 ## Features to work on:
 - keyword suggestion
 - background service for notification
+- Alternative search with url
+- Save job_id in asin instead of keywords

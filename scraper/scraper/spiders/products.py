@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import mysql.connector
-import nltk
+from scraper.modules.spiderjob import SpiderJob
 
 log = logging.getLogger('ProductSpider')
 
@@ -28,54 +28,22 @@ def fetch_single(query):
         return False
 
 
-def get_asin(key):
-    key = "%" + key + "%"
-    cursor.execute("SELECT id FROM `asin` WHERE `keyword` LIKE '%s' and crawled=0 LIMIT 1" % key)
-    a = cursor.fetchone()
-    if a:
-        return a[0]
-    return a
-
-
-# SELECT id FROM `asin` WHERE `keyword` like '%exercise yoga balls%' and crawled=0 LIMIT 1
-
-class ScraperConfig:
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def asin_url(asin):
-        if not asin:
-            return False
-        return 'https://www.amazon.com/dp/' + asin
-
-    @staticmethod
-    def get_keyword():
-        cursor.execute("SELECT word FROM `keywords` WHERE `scrapped` = 0 LIMIT 1")
-        data = cursor.fetchall()
-        if data:
-            return data[0][0]
-        else:
-            return False
-
-
 class ProductsSpider(scrapy.Spider):
     name = 'products'
-    allowed_domains = ['amazon.com']
-    start_urls = ['http://amazon.com/']
 
-    def __init__(self, **kwargs):
-        self.keyword = fetch_single("SELECT keyword FROM `state` WHERE 1")
-        self.asin = get_asin(self.keyword)
-        self.url = ScraperConfig.asin_url(self.asin)
+    def __init__(self, job=0, **kwargs):
+        self.job = SpiderJob(job)
+        self.url = 'https://www.amazon.com/dp/'
+        self.asin = ''
+        self.sets = set()
         super(ProductsSpider, self).__init__(**kwargs)
 
     def start_requests(self):
-        self.keyword = ScraperConfig.get_keyword()
-        self.url = ScraperConfig.asin_url(get_asin(self.keyword))
-        self.save_instance()
-        yield scrapy.Request(self.url, self.parse)
+        self.sets = self.job.get_asin()
+        self.asin = self.sets.pop()[0]
+        if self.asin:
+            url = self.url + self.asin
+            yield scrapy.Request(url, self.parse)
 
     def parse(self, response):
         filename = logs_dir + '/%s.html' % self.asin
@@ -171,9 +139,10 @@ class ProductsSpider(scrapy.Spider):
             if 'Shipping' in table_name:
                 shipping_weight = table_value.encode('UTF-8').strip()
                 try:
-                    shipping_weight = shipping_weight.split()[0] + " " + shipping_weight.split()[1]
-                except():
+                    shipping_weight = " ".join(shipping_weight.split())
+                except IndexError:
                     shipping_weight = shipping_weight
+                    pass
             if 'Rank' in table_name:
                 rank = tr.css('td span span::text').get().strip().encode('UTF-8')
                 rank = rank.split()[0]
@@ -188,7 +157,7 @@ class ProductsSpider(scrapy.Spider):
                 else:
                     try:
                         rank = rank[0]
-                    except():
+                    except IndexError:
                         pass
             if dimension == "":
                 dimension = re.findall(r"(\d\d x \d\d x \d\d [a-z]+)", table)
@@ -197,7 +166,7 @@ class ProductsSpider(scrapy.Spider):
                 else:
                     try:
                         dimension = dimension[0]
-                    except():
+                    except IndexError:
                         pass
             if shipping_weight == "":
                 shipping_weight = re.findall(r"((\d+(\.\d+)?) ounces)", table)
@@ -212,8 +181,9 @@ class ProductsSpider(scrapy.Spider):
                 else:
                     try:
                         shipping_weight = shipping_weight[0][0]
-                    except():
+                    except IndexError:
                         shipping_weight = "err"
+                        pass
             if shipping_weight == "":
                 shipping_weight = re.findall(r"((\d+(\.\d+)?) kg)", table)
                 if not shipping_weight:
@@ -221,7 +191,7 @@ class ProductsSpider(scrapy.Spider):
                 else:
                     try:
                         shipping_weight = shipping_weight[0][0]
-                    except():
+                    except IndexError:
                         pass
             if shipping_weight == "":
                 shipping_weight = re.findall(r"((\d+(\.\d+)?) g)", table)
@@ -230,7 +200,7 @@ class ProductsSpider(scrapy.Spider):
                 else:
                     try:
                         shipping_weight = shipping_weight[0][0]
-                    except():
+                    except IndexError:
                         pass
             if shipping_weight == "":
                 shipping_weight = re.findall(r"((\d+(\.\d+)?) pound)", table)
@@ -239,62 +209,29 @@ class ProductsSpider(scrapy.Spider):
                 else:
                     try:
                         shipping_weight = shipping_weight[0][0]
-                    except():
+                    except IndexError:
                         pass
 
-        log.debug([name, price,
-                   manufacturer, rating, reviews,
-                   rank, seller_number, main_cat,
-                   sub_cats, self.keyword, response.url,
-                   dimension, shipping_weight, shares,
-                   self.asin])
-        insert = mysql.cursor()
+        insert = mysql.cursor(buffered=True)
         insert.execute("UPDATE `asin` SET "
                        "`title`=%s,`price`=%s,"
                        "`manufacturer`=%s,`rating`=%s,`reviews`=%s,"
                        "`rank`=%s,`seller_count`=%s,`category`=%s,"
-                       "`subcategory`=%s,`keyword`=%s,`url`=%s,"
-                       "`dimension`=%s,`weight`=%s,`shares`=%s, `crawled`=1 "
-                       "WHERE id = %s"
+                       "`subcategory`=%s,`url`=%s,"
+                       "`dimension`=%s,`weight`=%s,`shares`=%s, `crawljob`=%s "
+                       "WHERE asin = %s"
                        , (name, price, manufacturer, rating, reviews,
                           rank, seller_number, main_cat,
-                          sub_cats, self.keyword, response.url,
-                          dimension, shipping_weight, shares,
+                          sub_cats, response.url,
+                          dimension, shipping_weight, shares, self.job.job,
                           self.asin))
-        log.debug(insert.statement)
-        mysql.commit()
-        self.asin = get_asin(self.keyword)
-        self.url = ScraperConfig.asin_url(self.asin)
-        log.debug("For next step asin %s url %s" % (self.asin, self.url))
-        self.save_instance()
-        if self.url:
-            yield scrapy.Request(self.url, self.parse, headers={'referer': None})
 
-    def save_asin(self, asin, title, price, review):
-        log.debug("SAVE ASIN CALLED")
-        if asin:
-            if review:
-                review = review.replace(',', '')
-            keywords = self.keyword.lower().split()
-            p = nltk.PorterStemmer()
-            keywords = [p.stem(word) for word in keywords]
-            log.debug(keywords)
-            log.debug("%s %s %s %s " % (asin, title, price, review))
-            if all(key in title.lower() for key in keywords):
-                cursor.execute("INSERT IGNORE INTO "
-                               "`asin`(`id`, `title`, `price`, `reviews`)"
-                               " VALUES (%s,%s,%s,%s)",
-                               (asin, title, price, review)
-                               )
-                mysql.commit()
-                log.debug("Added %s" % title)
-            else:
-                log.debug("Ignored %s" % title)
-
-    def save_instance(self):
-        log.debug("SAVE INSTANCE CALLED")
-        cursor.execute("UPDATE `state` SET `keyword`='%s',"
-                       "`url`='%s'"
-                       " WHERE id = 1 "
-                       % (self.keyword, self.url))
         mysql.commit()
+
+        self.asin = self.sets.pop()[0]
+
+        if self.asin:
+            url = self.url + self.asin
+            yield scrapy.Request(url, self.parse, headers={'referer': None})
+        else:
+            self.job.finish()

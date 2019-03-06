@@ -17,9 +17,9 @@ mysql = mysql.connector.connect(
 
 def saveFailed(key, reason):
     cursor = mysql.cursor(buffered=True)
-    cursor.execute("UPDATE `proxy` SET `failed` = `failed` + 1 , `last_failed`='%s' , failed_reason = '%s'"
-                   " WHERE `proxy`.`id` = %s;"
-                   % (datetime.datetime.now(), reason, key))
+
+    cursor.execute("UPDATE `proxy` SET `failed` = `failed` + 1 , `last_failed`=NOW() , failed_reason = %s"
+                   " WHERE `proxy`.`id` = %s;", (str(reason), key))
     mysql.commit()
 
 
