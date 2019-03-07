@@ -111,7 +111,6 @@ class SearchpageSpider(scrapy.Spider):
             self.job.finish()
 
     def save_asin(self, asin, title, price, review, image):
-        log.debug("SAVE ASIN CALLED")
         if asin:
             if review:
                 review = review.replace(',', '')
@@ -125,5 +124,4 @@ class SearchpageSpider(scrapy.Spider):
                             title, price, review, image,
                             self.job.job)
                            )
-            log.debug(cursor.statement)
             mysql.commit()
