@@ -26,18 +26,24 @@ def saveFailed(key, reason):
 class CustomRetryMiddleware(RetryMiddleware):
     def process_response(self, request, response, spider):
         logger.debug(response.status)
-        if request.meta.get('dont_retry', False):
-            return response
-        if response.status in self.retry_http_codes:
-            reason = response_status_message(response.status)
-            saveFailed(request.meta['proxy_id'], reason)
-            return self._retry(request, reason, spider) or response
+        # if request.meta.get('dont_retry', False):
+        #     reason = response_status_message(response.status)
+        #     saveFailed(request.meta['proxy_id'], reason)
+        #     self._retry(request, reason, spider) or response
+        # if response.status in self.retry_http_codes:
+        #     reason = response_status_message(response.status)
+        #     saveFailed(request.meta['proxy_id'], reason)
+        #     return self._retry(request, reason, spider) or response
 
         # captcha check
-        if response.status == 200:
+        if response.status < 400:
             if 'Robot' in response.xpath('/html/head/title').get():
                 logger.debug(response.xpath('/html/head/title').get())
                 return self._retry(request, 'Captcha Problem', spider) or response
+        else:
+            reason = response_status_message(response.status)
+            saveFailed(request.meta['proxy_id'], reason)
+            return self._retry(request, reason, spider) or response
         return response
 
     def process_exception(self, request, exception, spider):

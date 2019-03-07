@@ -40,10 +40,16 @@ class ProductsSpider(scrapy.Spider):
 
     def start_requests(self):
         self.sets = self.job.get_asin()
-        self.asin = self.sets.pop()[0]
-        if self.asin:
-            url = self.url + self.asin
-            yield scrapy.Request(url, self.parse)
+        if self.job.status == 2:
+            log.debug('Skipping duplicate')
+        else:
+            if len(self.sets):
+                self.asin = self.sets.pop()[0]
+                self.job.start()
+                url = self.url + self.asin
+                yield scrapy.Request(url, self.parse)
+            else:
+                self.job.finish()
 
     def parse(self, response):
         filename = logs_dir + '/%s.html' % self.asin
@@ -85,24 +91,33 @@ class ProductsSpider(scrapy.Spider):
             reviews = reviews.encode('UTF-8').strip().split()[0]
         # breadcrumbs contain categories
 
-        breadcrumbs = response.css('.a-subheader.a-breadcrumb ul li a::text')
+        breadcrumbs = response.css('.a-subheader.a-breadcrumb ul li a')
 
         sub_cats = []
         main_cat = ""
 
         if breadcrumbs is not None:
             for li in breadcrumbs:
-                if main_cat == "":
-                    main_cat = li.get().strip()
-                else:
-                    sub_cats.append(li.get().strip())
-        sub_cats = ';'.join(sub_cats)
+                text = li.css("::text").get().strip()
+                href = li.css('::attr(href)').get().split('&')
+                url = False
+                for node in href:
+                    if 'node' in node:
+                        url = 'https://www.amazon.com/b/?' + node
+                if url:
+                    self.job.save_url(text, url)
 
+                if main_cat == "":
+                    main_cat = text
+                else:
+                    sub_cats.append(text)
+
+        sub_cats = ';'.join(sub_cats)
         # number of sellers
         seller_number = response.css('#olp_feature_div a::text').get()
 
         if seller_number is not None:
-            arr = seller_number.strip().encode().split()
+            arr = seller_number.strip().encode("ascii", "ignore").split()
             for i in arr:
                 if '(' in i:
                     seller_number = i.replace('(', '').replace(')', '')
@@ -213,6 +228,8 @@ class ProductsSpider(scrapy.Spider):
                         pass
 
         insert = mysql.cursor(buffered=True)
+        if rank:
+            rank = rank.replace(',', '').replace('#', '').strip()
         insert.execute("UPDATE `asin` SET "
                        "`title`=%s,`price`=%s,"
                        "`manufacturer`=%s,`rating`=%s,`reviews`=%s,"
@@ -228,9 +245,8 @@ class ProductsSpider(scrapy.Spider):
 
         mysql.commit()
 
-        self.asin = self.sets.pop()[0]
-
-        if self.asin:
+        if len(self.sets) != 0:
+            self.asin = self.sets.pop()[0]
             url = self.url + self.asin
             yield scrapy.Request(url, self.parse, headers={'referer': None})
         else:

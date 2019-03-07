@@ -33,14 +33,18 @@ class SpiderJob(object):
         if self.searchBy == 'keywords':
             data = query("SELECT word from keywords where id=%s", (paramkey,))
             self.param = data[0]['word']
+        if self.searchBy == 'urls':
+            data = query("SELECT url from urls where id=%s", (paramkey,))
+            self.param = data[0]['url']
         else:
             self.param = paramkey
 
-    # todo fix asin duplication issue
     def get_asin(self, prev=''):
         if self.searchBy == 'job':
-            cursor.execute("SELECT asin FROM `asin` WHERE job=%s and asin!=%s and crawljob=0",
-                           (self.param, prev,))
+            sKey = '%' + str(self.param) + '%'
+            log.debug(sKey)
+            cursor.execute("SELECT asin FROM `asin` WHERE job like %s and crawljob=0",
+                           (sKey,))
         elif self.searchBy == 'product':
             cursor.execute("SELECT asin FROM `asin` WHERE product=%s and asin!=%s and crawljob=0",
                            (self.param, prev,))
@@ -51,24 +55,40 @@ class SpiderJob(object):
         mysql.commit()
 
     def finish(self):
-        cursor.execute("SELECT COUNT(asin) FROM `asin` WHERE reviews > 600 and job = %s", (self.job,))
-        result = cursor.fetchone()[0]
-        log.debug(result)
-        if result < 11:
-            cursor.execute("INSERT INTO `jobs` (`param`, `searchby`, `spider`) "
-                           "VALUES ( %s, 'job',  'products')", (self.job,))
-            mysql.commit()
-            newjob = cursor.lastrowid
-            r = requests.post("http://localhost:6800/schedule.json",
-                              data={'project': 'default',
-                                    'spider': 'products',
-                                    'job': self.job,
-                                    }
-                              )
-            if r.status_code == 200:
-                response = json.loads(r.text)
-                cursor.execute("INSERT INTO `job_logs` (job_id, job_scrapy_id) "
-                               "VALUES (%s , %s)", (newjob, response['jobid']))
+        if self.spider == 'searchpage':
+            sKey = '%' + str(self.param) + '%'
+            cursor.execute("SELECT COUNT(asin) FROM `asin` WHERE reviews > 600 and job like %s", (sKey,))
+            result = cursor.fetchone()[0]
+            if result < 11:
+                self.start_spider(self.job, 'job', 'products')
+        elif self.spider == 'products':
+            cursor.execute("SELECT id FROM urls WHERE job =%s ", (self.job,))
+            data = cursor.fetchall()
+            for i in data:
+                self.start_spider(i[0], 'urls', 'urls')
 
         cursor.execute("UPDATE `jobs` SET `status`=2, `updated`=NOW() WHERE id=%s", (self.job,))
         mysql.commit()
+
+    def save_url(self, name, url):
+        log.debug("%s %s %s " % (name, url, self.job))
+        cursor.execute("INSERT IGNORE INTO `urls` ( `name`, `url` ,`job`) VALUES (%s,%s, %s)", (name, url, self.job))
+        mysql.commit()
+
+    def start_spider(self, param, searchby, spider):
+        cursor.execute("INSERT INTO `jobs` (`param`, `searchby`, `spider`) "
+                       "VALUES ( %s, %s,%s)", (param, searchby, spider))
+        mysql.commit()
+        newjob = cursor.lastrowid
+
+        r = requests.post("http://localhost:6800/schedule.json",
+                          data={'project': 'default',
+                                'spider': spider,
+                                'job': newjob,
+                                }
+                          )
+        if r.status_code == 200:
+            response = json.loads(r.text)
+            log.debug(response)
+            cursor.execute("INSERT INTO `job_logs` (job_id, job_scrapy_id) "
+                           "VALUES (%s , %s)", (newjob, response['jobid']))

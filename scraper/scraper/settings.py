@@ -13,7 +13,7 @@ BOT_NAME = 'scraper'
 
 SPIDER_MODULES = ['scraper.spiders']
 NEWSPIDER_MODULE = 'scraper.spiders'
-
+HTTPERROR_ALLOW_ALL = True
 DOWNLOAD_TIMEOUT = 60
 RETRY_TIMES = 100
 DOWNLOAD_DELAY = 10

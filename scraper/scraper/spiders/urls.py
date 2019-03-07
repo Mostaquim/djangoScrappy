@@ -31,19 +31,16 @@ logs_dir = os.path.abspath(os.path.join(os.path.realpath(__file__), '../../../lo
 
 
 class SearchpageSpider(scrapy.Spider):
-    name = 'searchpage'
+    name = 'urls'
 
     def __init__(self, job=False, **kwargs):
-        # TODO check if we ran this before
         self.job = SpiderJob(job)
         self.keyword = self.job.param
-        self.url = 'https://www.amazon.com/s/?field-keywords='
+        self.url = self.job.param
         super(SearchpageSpider, self).__init__(**kwargs)
 
     def start_requests(self):
-        # TODO start request with passed params
-        self.url = self.url + self.job.param.replace(' ', '%')
-
+        self.url = self.job.param
         if self.job.status == 2:
             log.debug('Skipping duplicate')
         else:
