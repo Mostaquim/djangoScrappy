@@ -28,12 +28,15 @@ class SpiderJob(object):
         data = query("SELECT * FROM jobs WHERE id=%s", (self.job,))
         self.status = data[0]['status']
         self.spider = data[0]['spider']
-        self.searchBy = data[0]['searchby']
+        self.searchBy = data[0]['searchby'].strip()
         paramkey = data[0]['param']
-        if self.searchBy == 'keywords':
-            data = query("SELECT word from keywords where id=%s", (paramkey,))
+
+        if self.searchBy == "keywords":
+            data = query("SELECT word , product from keywords where id=%s", (paramkey,))
             self.param = data[0]['word']
-        if self.searchBy == 'urls':
+            self.product = data[0]['product']
+
+        elif self.searchBy == "urls":
             data = query("SELECT url from urls where id=%s", (paramkey,))
             self.param = data[0]['url']
         else:
@@ -56,6 +59,11 @@ class SpiderJob(object):
 
     def finish(self):
         if self.spider == 'searchpage':
+            if self.product != 0:
+                cursor.execute("UPDATE `products` SET `keyword_search` = '1' WHERE `products`.`id` = %s;",
+                               (self.product,))
+                mysql.commit()
+
             sKey = '%' + str(self.param) + '%'
             cursor.execute("SELECT COUNT(asin) FROM `asin` WHERE reviews > 600 and job like %s", (sKey,))
             result = cursor.fetchone()[0]
