@@ -85,16 +85,4 @@ class SpiderJob(object):
         cursor.execute("INSERT INTO `jobs` (`param`, `searchby`, `spider`) "
                        "VALUES ( %s, %s,%s)", (param, searchby, spider))
         mysql.commit()
-        newjob = cursor.lastrowid
 
-        r = requests.post("http://localhost:6800/schedule.json",
-                          data={'project': 'default',
-                                'spider': spider,
-                                'job': newjob,
-                                }
-                          )
-        if r.status_code == 200:
-            response = json.loads(r.text)
-            log.debug(response)
-            cursor.execute("INSERT INTO `job_logs` (job_id, job_scrapy_id) "
-                           "VALUES (%s , %s)", (newjob, response['jobid']))
