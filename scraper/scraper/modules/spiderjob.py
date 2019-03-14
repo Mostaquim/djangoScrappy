@@ -64,11 +64,6 @@ class SpiderJob(object):
                                (self.product,))
                 mysql.commit()
 
-            sKey = '%' + str(self.param) + '%'
-            cursor.execute("SELECT COUNT(asin) FROM `asin` WHERE reviews > 600 and job like %s", (sKey,))
-            result = cursor.fetchone()[0]
-            if result < 11:
-                self.start_spider(self.job, 'job', 'products')
         elif self.spider == 'products':
             cursor.execute("SELECT id FROM urls WHERE job =%s ", (self.job,))
             data = cursor.fetchall()
