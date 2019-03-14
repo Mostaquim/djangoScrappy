@@ -69,7 +69,10 @@ class SpiderJob(object):
             data = cursor.fetchall()
             for i in data:
                 self.start_spider(i[0], 'urls', 'urls')
-
+        if self.searchBy == 'products':
+            cursor.execute("UPDATE `products` SET `keyword_search` = '3' WHERE `products`.`id` = %s;",
+                           (self.product,))
+            mysql.commit()
         cursor.execute("UPDATE `jobs` SET `status`=2, `updated`=NOW() WHERE id=%s", (self.job,))
         mysql.commit()
 
