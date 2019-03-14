@@ -60,7 +60,7 @@ class SpiderJob(object):
     def finish(self):
         if self.spider == 'searchpage':
             if self.product != 0:
-                cursor.execute("UPDATE `products` SET `keyword_search` = '1' WHERE `products`.`id` = %s;",
+                cursor.execute("UPDATE `products` SET `keyword_search` = '2' WHERE `products`.`id` = %s;",
                                (self.product,))
                 mysql.commit()
 

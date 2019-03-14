@@ -148,16 +148,6 @@ class ProductsSpider(scrapy.Spider):
 
         for tr in table:
             table_name = tr.css('th::text').get().strip()
-            table_value = tr.css('td::text').get().strip()
-            if 'Dimensions' in table_name:
-                dimension = table_value.encode('UTF-8').strip()
-            if 'Shipping' in table_name:
-                shipping_weight = table_value.encode('UTF-8').strip()
-                try:
-                    shipping_weight = " ".join(shipping_weight.split())
-                except IndexError:
-                    shipping_weight = shipping_weight
-                    pass
             if 'Rank' in table_name:
                 rank = tr.css('td span span::text').get().strip().encode('UTF-8')
                 rank = rank.split()[0]
@@ -176,6 +166,15 @@ class ProductsSpider(scrapy.Spider):
                         pass
             if dimension == "":
                 dimension = re.findall(r"(\d\d x \d\d x \d\d [a-z]+)", table)
+                if not dimension:
+                    dimension = ""
+                else:
+                    try:
+                        dimension = dimension[0]
+                    except IndexError:
+                        pass
+            if dimension == "":
+                dimension = re.findall(r"(\d x \d x \d [a-z]+)", table)
                 if not dimension:
                     dimension = ""
                 else:
