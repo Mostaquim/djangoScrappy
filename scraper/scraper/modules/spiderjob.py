@@ -49,7 +49,7 @@ class SpiderJob(object):
             cursor.execute("SELECT asin FROM `asin` WHERE job like %s and crawljob=0",
                            (sKey,))
         elif self.searchBy == 'product':
-            cursor.execute("SELECT asin FROM `asin` WHERE product=%s and asin!=%s and crawljob=0",
+            cursor.execute("SELECT asin FROM `asin` WHERE product_type=%s and asin!=%s and crawljob=0",
                            (self.param, prev,))
         return set(cursor.fetchall())
 
@@ -71,7 +71,7 @@ class SpiderJob(object):
                 self.start_spider(i[0], 'urls', 'urls')
         if self.searchBy == 'products':
             cursor.execute("UPDATE `products` SET `keyword_search` = '3' WHERE `products`.`id` = %s;",
-                           (self.product,))
+                           (self.param,))
             mysql.commit()
         cursor.execute("UPDATE `jobs` SET `status`=2, `updated`=NOW() WHERE id=%s", (self.job,))
         mysql.commit()
