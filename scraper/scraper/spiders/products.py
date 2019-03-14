@@ -153,6 +153,8 @@ class ProductsSpider(scrapy.Spider):
                 rank = rank.split()[0]
 
         table = response.css('#detail-bullets').get()
+        if table is None:
+            table = response.css('table#productDetails_detailBullets_sections1').get()
         if table is not None:
             table = table.replace(',', '')
             if rank == "":
