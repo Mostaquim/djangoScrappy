@@ -10,14 +10,13 @@ mysql = mysql.connector.connect(
     database="web_scrapper"
 )
 
-cursor = mysql.cursor(buffered=True)
+cursor = mysql.cursor()
 
 
 def insert_word(asin_id, word):
     cursor.execute("SELECT id FROM word_dump WHERE word=%s", (word,))
     d = cursor.fetchone()
     if d:
-        print d
         word_id = d[0]
     else:
         cursor.execute("INSERT INTO `word_dump`(`word`) VALUES (%s)", (word,))
