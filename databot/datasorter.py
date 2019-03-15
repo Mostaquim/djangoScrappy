@@ -1,5 +1,6 @@
 import mysql.connector
 import logging
+from time import sleep
 
 log = logging.getLogger('DataSorter')
 
@@ -49,6 +50,7 @@ def parse_single():
                     if w not in stopwords:
                         if len(w) > 2:
                             insert_word(asin_id, w.lower())
+        sleep(0.01)
         parse_single()
 
 
