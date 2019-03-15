@@ -29,7 +29,8 @@ def insert_word(asin_id, word):
 
 
 def parse_single():
-    cursor.execute("SELECT id, title FROM asin WHERE id NOT IN(SELECT asin_id as id FROM asin_word_rel) LIMIT 1")
+    cursor.execute("SELECT id, title FROM asin WHERE id NOT IN(SELECT asin_id as id FROM asin_word_rel) "
+                   "and title is not null LIMIT 1")
     d = cursor.fetchone()
     if d:
         whitelist = set('abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ')
