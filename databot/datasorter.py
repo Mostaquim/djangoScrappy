@@ -36,17 +36,18 @@ def parse_single():
         stopwords = {'on', 'the', 'a', 'for', 'with'}
 
         asin_id = d[0]
+        title = d[1]
+        if title:
+            title = title.encode('ascii', 'ignore')
+            title = ''.join(filter(whitelist.__contains__, title))
 
-        title = d[1].encode('ascii', 'ignore')
-        title = ''.join(filter(whitelist.__contains__, title))
-
-        title = title.split(' ')
-        title = list(dict.fromkeys(title))
-        for w in title:
-            if w:
-                if w not in stopwords:
-                    if len(w) > 2:
-                        insert_word(asin_id, w.lower())
+            title = title.split(' ')
+            title = list(dict.fromkeys(title))
+            for w in title:
+                if w:
+                    if w not in stopwords:
+                        if len(w) > 2:
+                            insert_word(asin_id, w.lower())
         parse_single()
 
 
