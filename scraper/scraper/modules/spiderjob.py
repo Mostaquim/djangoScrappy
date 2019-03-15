@@ -48,7 +48,7 @@ class SpiderJob(object):
             log.debug(sKey)
             cursor.execute("SELECT asin FROM `asin` WHERE job like %s and crawljob=0",
                            (sKey,))
-        elif self.searchBy == 'product':
+        elif self.searchBy == 'products':
             cursor.execute("SELECT asin FROM `asin` WHERE product_type=%s and asin!=%s and crawljob=0",
                            (self.param, prev,))
         return set(cursor.fetchall())
