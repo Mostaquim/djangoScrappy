@@ -11,7 +11,7 @@ cursor = mysql.cursor(buffered=True)
 cursor.execute("SELECT `title` FROM `asin` WHERE 1")
 
 data = cursor.fetchall()
-stopwords = {'on', 'the', 'a', '', 'for', 'with'}
+stopwords = {'on', 'the', 'a', 'for', 'with'}
 wordcount = {}
 for x in data:
     for word in x[0].replace('-', " ").replace('/', " ").lower().split():
