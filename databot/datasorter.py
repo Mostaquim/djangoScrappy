@@ -34,7 +34,9 @@ def parse_single():
     cursor.execute("SELECT id, title FROM asin WHERE id NOT IN(SELECT asin_id as id FROM asin_word_rel) "
                    "and title is not null LIMIT 1")
     d = cursor.fetchone()
+    z = True
     if d:
+        z = False
         whitelist = set('abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         stopwords = {'on', 'the', 'a', 'for', 'with'}
 
@@ -50,6 +52,7 @@ def parse_single():
                 if w:
                     if w not in stopwords:
                         if len(w) > 2:
+                            z = True
                             insert_word(asin_id, w.lower())
         try:
             parse_single()
