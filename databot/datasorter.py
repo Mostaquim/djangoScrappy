@@ -34,7 +34,6 @@ def parse_single():
     cursor.execute("SELECT id, title FROM asin WHERE id NOT IN(SELECT asin_id as id FROM asin_word_rel) "
                    "and title is not null and noselect = 0 LIMIT 1")
     d = cursor.fetchone()
-    print d
     z = False
     if d:
         whitelist = set('abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ')
@@ -54,6 +53,7 @@ def parse_single():
                             insert_word(asin_id, w.lower())
         try:
             if not z:
+                print asin_id
                 cursor.execute("UPDATE `asin` set noselect = 1 where id = %s", (asin_id,))
                 mysql.commit()
             parse_single()
