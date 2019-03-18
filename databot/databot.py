@@ -48,7 +48,6 @@ class DataBot:
                 title = title.split(' ')
                 title = list(dict.fromkeys(title))
                 for w in title:
-
                     if w:
                         if w not in stopwords:
                             if len(w) > 2:
