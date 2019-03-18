@@ -11,7 +11,10 @@ mysql = mysql.connector.connect(
     password="metro2o33",
     database="web_scrapper"
 )
+# related word_id query
+# SELECT DISTINCT word_id from asin_word_rel WHERE EXISTS (SELECT asin_id from (SELECT DISTINCT asin_id FROM `asin_word_rel` WHERE word_id = 2435) as a WHERE a.asin_id = asin_word_rel.asin_id)
 
+# SELECT DISTINCT asin_id from asin_word_rel WHERE word_id=2435 OR word_id=2436 GROUP BY asin_id HAVING COUNT(*) > 1
 cursor = mysql.cursor()
 
 
@@ -61,5 +64,6 @@ def parse_single():
             sleep(2)
             print('Run Time error')
             os.system('python datasorter.py')
+
 
 parse_single()
