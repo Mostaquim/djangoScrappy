@@ -32,21 +32,18 @@ def insert_word(asin_id, word):
 
 def parse_single():
     cursor.execute("SELECT id, title FROM asin WHERE id NOT IN(SELECT asin_id as id FROM asin_word_rel) "
-                   "and title is not null LIMIT 1")
+                   "and title is not null and noselect = 0 LIMIT 1")
     d = cursor.fetchone()
     print d
-    z = True
-    if z:
-        z = False
+    z = False
+    if d:
         whitelist = set('abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         stopwords = {'on', 'the', 'a', 'for', 'with'}
-
         asin_id = d[0]
         title = d[1]
         if title:
             title = title.encode('ascii', 'ignore')
             title = ''.join(filter(whitelist.__contains__, title))
-
             title = title.split(' ')
             title = list(dict.fromkeys(title))
             for w in title:
@@ -56,6 +53,9 @@ def parse_single():
                             z = True
                             insert_word(asin_id, w.lower())
         try:
+            if not z:
+                cursor.execute("UPDATE `asin` set noselect = 1 where id = %s", (asin_id,))
+                mysql.commit()
             parse_single()
         except RuntimeError:
             sleep(2)
