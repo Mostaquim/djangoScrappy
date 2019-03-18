@@ -36,7 +36,7 @@ def parse_single():
     d = cursor.fetchone()
     print d
     z = True
-    if d:
+    if z:
         z = False
         whitelist = set('abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         stopwords = {'on', 'the', 'a', 'for', 'with'}
