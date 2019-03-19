@@ -129,4 +129,4 @@ class ReviewGen:
             mysql.commit()
 
 
-ReviewGen().parse_one()
+ReviewGen().parse_two()
