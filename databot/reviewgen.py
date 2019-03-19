@@ -24,25 +24,29 @@ class ReviewGen:
         self.id = 0
 
     def parse_one(self):
-        selectCursor.execute("SELECT id,word from word_dump WHERE 1")
+        selectCursor.execute("SELECT id,word from word_dump WHERE `wcount` > 9")
         words = selectCursor.fetchall()
         for word_id in words:
+            print word_id[0]
             selectCursor.execute("SELECT COUNT(asin) FROM asin WHERE id in "
                                  "(SELECT DISTINCT asin_id as id from asin_word_rel WHERE word_id=%s)"
                                  " and reviews < 601 and reviews is not null and reviews != 0", (word_id[0],))
             d = selectCursor.fetchone()
-
+            selectCursor.execute("SELECT COUNT(asin) FROM asin WHERE id in "
+                                 "(SELECT DISTINCT asin_id as id from asin_word_rel WHERE word_id=%s)", (word_id[0],))
+            n = selectCursor.fetchone()
             if d[0] == 0:
-                self.cursor.execute("INSERT INTO `valid_keyword` "
-                                    "(`keyword`, `word_set`) "
-                                    "VALUES (%s, %s)", (word_id[1], word_id[0]))
+                if n[0] != 0:
+                    self.cursor.execute("INSERT INTO `valid_keyword` "
+                                        "(`keyword`, `word_set`, `wcount`) "
+                                        "VALUES (%s, %s, %s)", (word_id[1], word_id[0], n[0]))
+                self.cursor.execute("UPDATE `word_dump` SET `searchlevel` = 1 WHERE `id` = %s;", (word_id[0],))
                 self.counter += 1
 
-            if self.counter > 2000:
+            if self.counter > 500:
                 self.counter = 0
                 mysql.commit()
         mysql.commit()
-        ReviewGen().parse_two()
 
     def parse_two(self):
         selectCursor.execute("SELECT id,word from word_dump WHERE 1")
@@ -59,7 +63,8 @@ class ReviewGen:
                     selectCursor.execute("SELECT COUNT(*) FROM asin WHERE id in "
                                          "( SELECT asin_id as id from asin_word_rel "
                                          "WHERE word_id =%s or word_id=%s GROUP BY asin_id HAVING COUNT(*) > 1 ) "
-                                         "and reviews < 601 and reviews is not null and reviews != 0", (word[0], sword[0]))
+                                         "and reviews < 601 and reviews is not null and reviews != 0",
+                                         (word[0], sword[0]))
 
                     d = selectCursor.fetchone()
                     keyword = "%s %s" % (word[1], sword[1])
@@ -70,11 +75,10 @@ class ReviewGen:
                                             "VALUES (%s, %s)", (keyword, wset))
                         self.counter += 1
 
-                    if self.counter > 2000:
+                    if self.counter > 500:
                         self.counter = 0
                         mysql.commit()
-            mysql.commit()
-        ReviewGen().parse_three()
+        mysql.commit()
 
     def parse_three(self):
         selectCursor.execute("SELECT id,word from word_dump WHERE 1")
