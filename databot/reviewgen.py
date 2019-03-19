@@ -37,6 +37,7 @@ class ReviewGen:
             n = selectCursor.fetchone()
             if d[0] == 0:
                 if n[0] != 0:
+                    print "found %s" % word_id[0]
                     self.cursor.execute("INSERT INTO `valid_keyword` "
                                         "(`keyword`, `word_set`, `wcount`) "
                                         "VALUES (%s, %s, %s)", (word_id[1], word_id[0], n[0]))
